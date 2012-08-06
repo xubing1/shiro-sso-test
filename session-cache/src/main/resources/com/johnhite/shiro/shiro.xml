@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context/spring-context-2.5.xsd"
+
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+          http://www.springframework.org/schema/context/spring-context-2.5.xsd http://www.springframework.org/schema/context/spring-context-2.5.xsd/spring-spring-context-2.5.xsd-2.5.6.SEC03.xsd
+">
+    
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <!-- override these for application-specific URLs if you like:
+        <property name="loginUrl" value="/login.jsp"/>
+        <property name="successUrl" value="/home.jsp"/>
+        <property name="unauthorizedUrl" value="/unauthorized.jsp"/> -->
+        <!-- The 'filters' property is not necessary since any declared javax.servlet.Filter bean  -->
+        <!-- defined will be automatically acquired and available via its beanName in chain        -->
+        <!-- definitions, but you can perform instance overrides or name aliases here if you like: -->
+        <!-- <property name="filters">
+            <util:map>
+                <entry key="anAlias" value-ref="someFilter"/>
+            </util:map>
+        </property> -->
+        <property name="filterChainDefinitions">
+            <value>
+                # some example chain definitions:
+                /logout = logout
+                /* = authc
+            </value>
+        </property>
+    </bean>
+
+    <!-- Define any javax.servlet.Filter beans you want anywhere in this application context.   -->
+    <!-- They will automatically be acquired by the 'shiroFilter' bean above and made available -->
+    <!-- to the 'filterChainDefinitions' property.  Or you can manually/explicitly add them     -->
+    <!-- to the shiroFilter's 'filters' Map if desired. See its JavaDoc for more details.       -->
+    <bean id="authc" class="org.apache.shiro.web.filter.authc.FormAuthenticationFilter">
+        <property name="loginUrl" value="/login.jsp" />
+    </bean>
+
+    <bean id="logout" class="org.apache.shiro.web.filter.authc.LogoutFilter">
+        <property name="redirectUrl" value="login.jsp" />
+    </bean>
+
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManager">
+            <bean class="net.sf.ehcache.CacheManager" factory-method="getInstance" />
+        </property>
+    </bean>
+    
+    <bean id="sessionDAO" class="org.apache.shiro.session.mgt.eis.EnterpriseCacheSessionDAO">
+        <property name="cacheManager" ref="cacheManager" />
+    </bean>
+
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <!-- Single realm app.  If you have multiple realms, use the 'realms' property instead. -->
+        <property name="realm" ref="iniRealm"/>
+
+        <property name="sessionManager">
+            <bean class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+                <property name="sessionDAO" ref="sessionDAO" />
+            </bean>
+        </property>
+
+        <property name="cacheManager" ref="cacheManager" />
+    </bean>
+
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+
+    <!-- Define the Shiro Realm implementation you want to use to connect to your back-end -->
+    <!-- security datasource: -->
+    <bean id="iniRealm" class="org.apache.shiro.realm.text.IniRealm">
+        <constructor-arg value="classpath:shiro.ini" />
+    </bean>
+
+</beans>
